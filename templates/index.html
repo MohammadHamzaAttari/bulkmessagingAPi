@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Send WhatsApp Messages</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h2 {
+            text-align: center;
+        }
+
+        #messageForm {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+
+        label, textarea, input {
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            resize: vertical;
+        }
+
+        input[type="submit"] {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        input[type="submit"]:hover {
+            background-color: #45a049;
+        }
+
+        #dashboard {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 20px;
+        }
+
+        .dashboard-box {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .dashboard-box h3 {
+            margin-bottom: 10px;
+        }
+
+        .dashboard-box p {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        /* Progress Bar Styles */
+        #progressBar {
+            width: 100%;
+            background-color: #f3f3f3;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 10px;
+            display: none;
+        }
+
+        #progressBar div {
+            height: 24px;
+            width: 0;
+            background-color: #4CAF50;
+            text-align: center;
+            line-height: 24px;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <h2>Send WhatsApp Messages</h2>
+    <form id="messageForm">
+        <label for="numbers">Enter numbers (comma-separated, must provide country-code):</label>
+        <textarea id="numbers" name="numbers" rows="4" cols="50" placeholder="e.g., +1234567890, +1987654321"></textarea>
+        <label for="message">Message:</label>
+        <textarea id="message" name="message" rows="4" cols="50" placeholder="Type your message here..."></textarea>
+        <input type="submit" value="Send Messages">
+        <div id="progressBar"><div></div></div>
+    </form>
+
+    <div id="dashboard">
+        <div class="dashboard-box" id="successBox">
+            <h3>Successfully Sent</h3>
+            <p id="successCount">0</p>
+        </div>
+        <div class="dashboard-box" id="errorBox">
+            <h3>Failed to Send</h3>
+            <p id="errorCount">0</p>
+        </div>
+        <div class="dashboard-box" id="totalCount">
+            <h3>Total Messages Sent</h3>
+            <p id="totalCountValue">0</p>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('messageForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            let numbers = document.getElementById('numbers').value.split(',').map(num => num.trim());
+            let message = document.getElementById('message').value;
+            let progressBar = document.getElementById('progressBar');
+            let progressBarFill = progressBar.querySelector('div');
+            let totalMessages = numbers.length;
+            let successCount = 0;
+            let errorCount = 0;
+
+            // Show progress bar
+            progressBar.style.display = 'block';
+            progressBarFill.style.width = '0%';
+            progressBarFill.textContent = '0%';
+
+            // Function to update progress
+            function updateProgress(current) {
+                let progress = Math.floor((current / totalMessages) * 100);
+                progressBarFill.style.width = progress + '%';
+                progressBarFill.textContent = progress + '%';
+            }
+
+            // Send messages one by one
+            for (let i = 0; i < numbers.length; i++) {
+                let number = numbers[i];
+                try {
+                    let response = await fetch('/send', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ numbers: [number], message: message })
+                    });
+
+                    let data = await response.json();
+
+                    if (data.status === "Messages sent successfully") {
+                        successCount++;
+                    } else {
+                        errorCount++;
+                    }
+                } catch (error) {
+                    errorCount++;
+                    console.error('Error:', error);
+                }
+
+                updateProgress(i + 1);
+
+                // Update dashboard
+                document.getElementById('successCount').textContent = successCount;
+                document.getElementById('errorCount').textContent = errorCount;
+                document.getElementById('totalCountValue').textContent = successCount + errorCount;
+            }
+        });
+    </script>
+</body>
+</html>
